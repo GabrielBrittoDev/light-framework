@@ -1,10 +1,11 @@
 <?php
 
 
-// load our environment files - used to store credentials & configuration
-$dotenv = Dotenv\Dotenv::createImmutable(getcwd());
-$dotenv->load();
 
+if (file_exists(getcwd(). '.env')){
+    $dotenv = Dotenv\Dotenv::createImmutable(getcwd());
+    $dotenv->load();
+}
 return
     [
         'paths' => [

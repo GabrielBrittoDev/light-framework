@@ -6,8 +6,9 @@ class Router
 {
 
     private $uri;
-    private $routeFounded = false;
+    private $routeFound = false;
     private $requestMethod;
+    private $namespace;
     private $args = array();
 
     public function __construct($uri, $requestMethod)
@@ -16,9 +17,31 @@ class Router
         $this->requestMethod = $requestMethod;
     }
 
+    public function group($prefix, $namespace, $routes){
+            $prefix = trim($prefix, '/');
+            if (str_contains($this->uri, $prefix) && !$this->routeFound){
+                $this->namespace .= '\\'. trim($namespace,'/');
+
+                $tempUri = $this->uri;
+                //Removing the prefix from uri
+                $uri = str_replace($prefix, '', $this->uri);
+                $uri = trim(str_replace('//', '/', $uri), '/');
+                $this->uri = $uri;
+
+                $routes();
+
+                //After executes the routes of the group will reset namespace and uri to his original.
+                $this->namespace = '';
+                $this->uri = $tempUri;
+            }
+    }
+
+
+
     public function get($route, $controllerAction)
     {
-        if (!$this->isCorrectRoute($route)  || strtoupper($this->requestMethod) !== 'GET' || $this->routeFounded){
+
+        if (!$this->isCorrectRoute($route)  || strtoupper($this->requestMethod) !== 'GET' || $this->routeFound){
             return;
         }
 
@@ -28,7 +51,7 @@ class Router
     public function post($route, $controllerAction)
     {
 
-        if (!$this->isCorrectRoute($route) || strtoupper($this->requestMethod) !== 'POST' || $this->routeFounded)
+        if (!$this->isCorrectRoute($route) || strtoupper($this->requestMethod) !== 'POST' || $this->routeFound)
             return;
 
         $args = array_merge(array('request' => $_POST), $this->args);
@@ -38,15 +61,16 @@ class Router
 
     public function delete($route, $controllerAction)
     {
-        if (!$this->isCorrectRoute($route)  || strtoupper($this->requestMethod) != 'DELETE' || $this->routeFounded)
+        if (!$this->isCorrectRoute($route)  || strtoupper($this->requestMethod) != 'DELETE' || $this->routeFound)
             return;
+
 
         $this->callFunction($controllerAction, $this->args);
     }
 
     public function put($route, $controllerAction)
     {
-        if (!$this->isCorrectRoute($route) ||strtoupper($this->requestMethod) != 'PUT' || $this->routeFounded)
+        if (!$this->isCorrectRoute($route) ||strtoupper($this->requestMethod) != 'PUT' || $this->routeFound)
             return;
 
         parse_str(file_get_contents("php://input"),$putRequestBody);
@@ -59,7 +83,8 @@ class Router
     private function callFunction($controllerAction, $args){
         $controller = explode('@', $controllerAction)[0];
         $action = explode('@', $controllerAction)[1];
-        $this->routeFounded = true;
+        $this->routeFound = true;
+        $controller = $this->namespace. '\\' . $controller;
         call_user_func_array(array(new $controller, $action), $args);
     }
 

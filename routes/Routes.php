@@ -1,4 +1,6 @@
 <?php
 
 
-$route->get('/', 'HomeController@index');
+
+$routes->get('/', 'HomeController@index');
+

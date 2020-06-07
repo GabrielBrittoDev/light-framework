@@ -10,11 +10,16 @@ class Core
      */
     public function start()
     {
-        $uri = $_GET['uri'] ?? '/';
+
+        //Gets the uri without GET parameter
+        $uri = explode('?', $_SERVER['REQUEST_URI'])[0];
+
         $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-        $route = new Router($uri, $requestMethod);
-        $route->get('/', 'HomeController@index');
+        $routes = new Router($uri, $requestMethod);
+
+        include '../routes/Routes.php';
+
 
     }
 

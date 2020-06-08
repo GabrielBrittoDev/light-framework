@@ -80,12 +80,18 @@ class Router
         $this->callFunction($controllerAction, $args);
     }
 
+    public function dispatch(){
+        if (!$this->routeFound){
+            throw new \Exception('Route not found', 404);
+        }
+    }
+
     private function callFunction($controllerAction, $args){
-        $controller = explode('@', $controllerAction)[0];
-        $action = explode('@', $controllerAction)[1];
-        $this->routeFound = true;
-        $controller = $this->namespace. '\\' . $controller;
-        call_user_func_array(array(new $controller, $action), $args);
+            $controller = explode('@', $controllerAction)[0];
+            $action = explode('@', $controllerAction)[1];
+            $controller = $this->namespace . '\\' . $controller;
+            $this->routeFound = true;
+            call_user_func_array(array(new $controller, $action), $args);
     }
 
     private function isCorrectRoute($route){

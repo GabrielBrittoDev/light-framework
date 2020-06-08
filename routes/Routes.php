@@ -4,3 +4,4 @@
 
 $routes->get('/', 'HomeController@index');
 
+$routes->dispatch();

@@ -1,5 +1,7 @@
 <?php
 
+//TODO: handle errors in files like that
+
 function loadControllers($className){
     if (strpos($className, 'Controller')) {
         $className = str_replace('\\', '/', $className);

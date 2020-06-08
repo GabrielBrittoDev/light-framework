@@ -18,6 +18,7 @@ class Core
 
         $routes = new Router($uri, $requestMethod);
 
+
         include '../routes/Routes.php';
 
 

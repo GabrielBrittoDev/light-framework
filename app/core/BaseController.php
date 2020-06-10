@@ -16,7 +16,7 @@ abstract class BaseController
         $twig = new Environment($loader);
         $template = $twig->load($view);
         if ($headerLocation !== ''){
-            header("Location: ${$_SERVER['HTTP_HOST']}/". $headerLocation);
+            header("Location: http://{$_SERVER['HTTP_HOST']}/". $headerLocation);
         }
 
         return $template->render($args);

@@ -5,21 +5,12 @@ namespace core;
 /**
  * Error and exception handler
  *
- * PHP version 5.4
+ * PHP version 7
  */
 class Error
 {
 
-    /**
-     * Error handler. Convert all errors to Exceptions by throwing an ErrorException.
-     *
-     * @param int $level  Error level
-     * @param string $message  Error message
-     * @param string $file  Filename the error was raised in
-     * @param int $line  Line number in the file
-     *
-     * @return void
-     */
+
     public static function errorHandler($level, $message, $file, $line)
     {
         if (error_reporting() !== 0) {  // to keep the @ operator working

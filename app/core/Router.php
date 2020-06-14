@@ -54,7 +54,9 @@ class Router
         if (!$this->isCorrectRoute($route) || strtoupper($this->requestMethod) !== 'POST' || $this->routeFound)
             return;
 
-        $args = array_merge(array('request' => $_POST), $this->args);
+        $postRequestBody = file_get_contents("php://input");
+
+        $args = array_merge(array('request' => sizeof($_POST) > 0 ? $_POST : $postRequestBody), $this->args);
 
         $this->callFunction($controllerAction, $args);
     }

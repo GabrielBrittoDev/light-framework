@@ -3,7 +3,6 @@
     "robmorgan/phinx": "^0.12.1",
     "vlucas/phpdotenv": "^4.1",
     "twig/twig": "^3.0",
-    "rakit/validation": "^1.2",
     "ext-pdo": "*",
     "odan/twig-assets": "^3.0"
   }

@@ -13,6 +13,21 @@ abstract class BaseModel {
 
     }
 
+    public function delete(int $id){
+        $query = "DELETE FROM $this->tableName WHERE id = ?";
+        $conn = Connection::getConn();
+
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(1, $id);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0){
+            return true;
+        }
+
+        throw new Exception('Not found', 404);
+    }
+
     public function find(int $id){
         $query = "SELECT * FROM $this->tableName WHERE id = ?";
         $conn = Connection::getConn();
@@ -29,8 +44,22 @@ abstract class BaseModel {
         throw new Exception('Not found', 404);
     }
 
-    public function create(){
+    public function create($fields = []){
+    }
 
+    public function all(){
+        $query = "SELECT * FROM $this->tableName";
+        $conn = Connection::getConn();
+
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0){
+            $objects = $stmt->fetchAll(PDO::FETCH_OBJ);
+            return $this->response($objects);
+        }
+
+        throw new Exception('Not found', 404);
     }
 
     private function uncamelize($camel,$splitter="_") {
@@ -40,6 +69,11 @@ abstract class BaseModel {
 
     private function response($object){
         foreach ($this->hidden as $key){
+            if (is_array($object)){
+                foreach ($object as $value){
+                    unset($value->$key);
+                }
+            }
             unset($object->$key);
         }
         return $object;

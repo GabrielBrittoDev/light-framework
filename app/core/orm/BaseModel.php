@@ -1,6 +1,6 @@
 <?php
 
-abstract class BaseModel {
+abstract class BaseModel extends QueryBuilder {
 
     protected $tableName;
     protected $hidden = [];
@@ -9,8 +9,30 @@ abstract class BaseModel {
         $this->tableName = $this->uncamelize($this->table ?? static::class) . 's';
     }
 
-    public function save(){
+    public function update($fields = [], int $id){
+        $conn = Connection::getConn();
+        $query =  "UPDATE $this->tableName SET ";
+        foreach ($fields as $key => $value){
+            $query .= "{$this->escape($key)} = :$key,";
+        }
+        $query = rtrim($query, ',');
+        $query .= ' WHERE id = :id';
+        $query = str_replace('#', $this->organizeColumns(array_keys($fields)), $query);
 
+        $stmt = $conn->prepare($query);
+
+        foreach ($fields as $key => $value){
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue('id', $id);
+
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0){
+            return $fields;
+        }
+
+        return $stmt->errorInfo();
     }
 
     public function delete(int $id){
@@ -45,6 +67,34 @@ abstract class BaseModel {
     }
 
     public function create($fields = []){
+        $conn = Connection::getConn();
+
+        $query =  "INSERT INTO $this->tableName (#) VALUES (";
+
+        foreach ($fields as $key => $value){
+            $query .= ":$key,";
+        }
+
+        $query = rtrim($query, ',') . ');';
+        $query = str_replace('#', $this->organizeColumns(array_keys($fields)), $query);
+
+        $stmt = $conn->prepare($query);
+
+        foreach ($fields as $key => $value){
+            $stmt->bindValue($key, $value);
+        }
+
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0){
+            $id = $conn->lastInsertId();
+
+            $stmt = $conn->prepare("SELECT * FROM $this->tableName WHERE id = $id");
+            $stmt->execute();
+
+            return $stmt->fetchObject(PDO::FETCH_OBJ);
+        }
+        return $stmt->errorInfo();
     }
 
     public function all(){

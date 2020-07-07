@@ -1,12 +1,14 @@
 <?php
 
-abstract class BaseModel extends QueryBuilder {
+abstract class BaseModel{
 
     protected $tableName;
     protected $hidden = [];
+    protected $queryBuilder;
 
     public function __construct(){
         $this->tableName = $this->uncamelize($this->table ?? static::class) . 's';
+        $this->queryBuilder = new QueryBuilder();
     }
 
     public function update($fields = [], int $id){
@@ -67,49 +69,11 @@ abstract class BaseModel extends QueryBuilder {
     }
 
     public function create($fields = []){
-        $conn = Connection::getConn();
-
-        $query =  "INSERT INTO $this->tableName (#) VALUES (";
-
-        foreach ($fields as $key => $value){
-            $query .= ":$key,";
-        }
-
-        $query = rtrim($query, ',') . ');';
-        $query = str_replace('#', $this->organizeColumns(array_keys($fields)), $query);
-
-        $stmt = $conn->prepare($query);
-
-        foreach ($fields as $key => $value){
-            $stmt->bindValue($key, $value);
-        }
-
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0){
-            $id = $conn->lastInsertId();
-
-            $stmt = $conn->prepare("SELECT * FROM $this->tableName WHERE id = $id");
-            $stmt->execute();
-
-            return $stmt->fetchObject(PDO::FETCH_OBJ);
-        }
-        return $stmt->errorInfo();
+        return $this->queryBuilder->insert($this->tableName, $fields)->create();
     }
 
     public function all(){
-        $query = "SELECT * FROM $this->tableName";
-        $conn = Connection::getConn();
-
-        $stmt = $conn->prepare($query);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0){
-            $objects = $stmt->fetchAll(PDO::FETCH_OBJ);
-            return $this->response($objects);
-        }
-
-        throw new Exception('Not found', 404);
+        return $this->queryBuilder->select($this->tableName)->create();
     }
 
     private function uncamelize($camel,$splitter="_") {

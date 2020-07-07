@@ -4,6 +4,10 @@
 class QueryBuilder
 {
 
+    private $query;
+    private $values;
+    private $returnFunction;
+
     public function escape($data){
             if ( !isset($data) || empty($data)) return '';
             if (is_numeric($data)) return $data;
@@ -23,13 +27,101 @@ class QueryBuilder
     }
 
 
-    public function organizeColumns($columns = array()){
-        $columnsEscaped = [];
-        for ($i = 0; $i < count($columns); $i++)
-            $columnsEscaped[] = $this->escape($columns[$i]);
+    public function select($table){
+        $query = 'SELECT * FROM ' . $this->escape($table);
+        $this->query = $query;
 
-        return implode(',', $columnsEscaped);
+        $this->returnFunction = function ($conn, $stmt){
+            if ($stmt->rowCount() > 0){
+                $objects = $stmt->fetchAll(PDO::FETCH_OBJ);
+                return $objects;
+            }
+
+            throw new Exception('Not found', 404);
+        };
+        return $this;
     }
 
+    public function and($field, $operator){
+        $query = '';
 
+        $query .= ' AND ' . $this->escape($field) . ' ' . $this->escape($operator) . ' :' . $this->escape($field);
+
+        $this->query .= $query;
+        return $this;
+    }
+
+    public function or($field, $operator){
+        $query = '';
+
+        $query .= ' OR ' . $this->escape($field) . ' ' . $this->escape($operator) . ' :' . $this->escape($field);
+
+        $this->query .= $query;
+        return $this;
+    }
+
+    public function where($field, $operator){
+        $query = '';
+
+        if (!strpos($this->query, 'WHERE')) $query .= ' WHERE ';
+
+        $query .= ' ' . $this->escape($field) . ' ' . $this->escape($operator) . ' :' . $this->escape($field);
+
+        $this->query .= $query;
+        return $this;
+    }
+
+    public function insert($table, $values)
+    {
+        $query = 'INSERT INTO ' . $this->escape($table) . '(#) VALUES (';
+        $valuesEscaped = [];
+        foreach ($values as $key => $value){
+            $valuesEscaped[$this->escape($key)] = $value;
+        }
+
+        $query = str_replace('#', implode(',', array_keys($valuesEscaped)), $query);
+
+        foreach ($valuesEscaped as $key => $value){
+            $query .= ":$key,";
+        }
+
+        $query = rtrim($query, ',') . ');';
+
+        $this->values = $valuesEscaped;
+        $this->query = $query;
+
+        $this->returnFunction = function ($conn, $stmt) use ($table){
+            if ($stmt->rowCount() > 0){
+                $id = $conn->lastInsertId();
+
+                $stmt = $conn->prepare("SELECT * FROM $table WHERE id = $id");
+                $stmt->execute();
+
+                return $stmt->fetchObject();
+            }
+
+            return $stmt->errorInfo();
+        };
+
+        return $this;
+    }
+
+    public function create(){
+        $conn = Connection::getConn();
+
+        $stmt = $conn->prepare($this->query);
+
+        if (!empty($this->values)){
+            foreach ($this->values as $key => $value){
+                $stmt->bindValue($key, $value);
+            }
+        }
+
+
+        $stmt->execute();
+        $this->values = [];
+        $this->query = '';
+
+        return ($this->returnFunction)($conn, $stmt);
+    }
 }
